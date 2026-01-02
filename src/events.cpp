@@ -14,7 +14,7 @@ namespace Events
 					if (auto movie{ menu->uiMovie.get() }) {
 						const auto scaleform = SKSE::GetScaleformInterface();
 						movie->Invoke("_root.RaceSexMenuBaseInstance.RaceSexPanelsInstance.InitData", nullptr, nullptr, 0);
-						bGetJSONDataRegistered = true;
+						//bGetJSONDataRegistered = true;
 					}
 				}
 			}

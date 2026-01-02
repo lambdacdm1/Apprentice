@@ -3,15 +3,14 @@
 #include "interface.h"
 #include "jsonhandler.h"
 
+
 GetJSONData* getJSONData = nullptr;
 
 bool ScaleformInjector::InstallHooks(RE::GFxMovieView* a_view, RE::GFxValue*)
 {
-
 	RE::GFxValue globals;
 	std::string swfName = a_view->GetMovieDef()->GetFileURL();
-		
-	logger::debug("{}", swfName);
+
 	bool result = a_view->GetVariable(&globals, "_global");
 	if (result && swfName == "Interface/RaceSex_menu.swf") {
 		RE::GFxValue LAM;
@@ -28,8 +27,15 @@ bool ScaleformInjector::InstallHooks(RE::GFxMovieView* a_view, RE::GFxValue*)
 
 		globals.SetMember("LAM", LAM);
 		logger::debug("JSON Getter installed.");
-		//a_view->Invoke("_root.RaceSexMenuBaseInstance.RaceSexPanelsInstance.InitData", nullptr, nullptr, 0);
 		return true;
 	}
 	return false;
+}
+
+void ScaleformInjector::Register()
+{
+	if (const auto scaleform{ SKSE::GetScaleformInterface() })
+	{
+		scaleform->Register(ScaleformInjector::InstallHooks, "LAM");
+	}
 }
