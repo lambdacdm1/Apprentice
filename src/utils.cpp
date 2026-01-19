@@ -9,3 +9,18 @@ void RegisterString(RE::GFxValue* object, RE::GFxMovie* movie, std::string strin
 
 	object->SetMember(stringName.c_str(), gfxString);
 }
+
+void AddBooleanMember(RE::GFxValue* entry, bool val, std::string_view name) {
+	RE::GFxValue member(val);
+	entry->SetMember(name.data(), &member);
+}
+
+void AddStringMember(RE::GFxValue* entry, std::string_view val, std::string_view name) {
+	RE::GFxValue member(val);
+	entry->SetMember(name.data(), &member);
+}
+
+void AddIntMember(RE::GFxValue* entry, i32 val, std::string_view name) {
+	RE::GFxValue member(val);
+	entry->SetMember(name.data(), &member);
+}

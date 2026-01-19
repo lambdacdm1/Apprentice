@@ -1,5 +1,6 @@
 #include "events.h"
 #include "interface.h"
+#include "racemenu.h"
 
 namespace Events
 {
@@ -8,7 +9,6 @@ namespace Events
 		if (!a_event || !a_event->opening)
 			return RE::BSEventNotifyControl::kContinue;
 
-			auto ui = RE::UI::GetSingleton();
 			if (auto ui{ RE::UI::GetSingleton() }) {
 				if (auto menu{ ui->GetMenu(RE::RaceSexMenu::MENU_NAME) }) {
 					if (auto movie{ menu->uiMovie.get() }) {
@@ -25,8 +25,33 @@ namespace Events
 	void RaceSexMenuWatcher::Register()
 	{
 		if (auto ui{ RE::UI::GetSingleton() }) {
-			static RaceSexMenuWatcher watcher;
-			ui->AddEventSink(&watcher);
+			if ( auto dataHandler { RE::TESDataHandler::GetSingleton()}) {
+				
+				// Separate out RaceMenu support
+				if (dataHandler->LookupLoadedModByName("RaceMenu.esp")) {
+					static RaceMenuWatcher watcher;
+					ui->AddEventSink(&watcher);
+
+				}
+				else {
+					static RaceSexMenuWatcher watcher;
+					ui->AddEventSink(&watcher);
+				}
+			}
 		}
+	}
+
+	RE::BSEventNotifyControl RaceMenuWatcher::ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
+	{
+		if (!a_event || !a_event->opening)
+			return RE::BSEventNotifyControl::kContinue;
+
+		if (const auto raceMenuInjector{ RaceMenu::GetSingleton() }) {
+			if (raceMenuInjector->GetRaceSexMenu()) {
+				raceMenuInjector->PopulateCategoryList();
+			}
+		}
+
+		return RE::BSEventNotifyControl::kContinue;
 	}
 }
