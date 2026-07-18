@@ -7,6 +7,8 @@ void Settings::LoadSettings()
     ini.SetUnicode();
     ini.LoadFile(R"(.\Data\SKSE\Plugins\Apprentice.ini)");
 
+    bUseClass              = ini.GetBoolValue("", "bRaceMenuUseClass", true);
+    bUseTrait              = ini.GetBoolValue("", "bRaceMenuUseTrait", true);
     MAG_ClassTrackerFormID = ini.GetValue("", "sMAG_ClassTrackerFormID", "");
     MAG_TraitTrackerFormID = ini.GetValue("", "sMAG_TraitTrackerFormID", "");
     FileName = ini.GetValue("", "sModFileName", "");

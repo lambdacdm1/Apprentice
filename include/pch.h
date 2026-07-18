@@ -6,11 +6,11 @@
 namespace logger = SKSE::log;
 using namespace std::literals;
 
-using u8 = std::uint8_t;
+using u8  = std::uint8_t;
 using u16 = std::uint16_t;
 using u32 = std::uint32_t;
 using u64 = std::uint64_t;
-using i8 = std::int8_t;
+using i8  = std::int8_t;
 using i16 = std::int16_t;
 using i32 = std::int32_t;
 using i64 = std::int64_t;
@@ -19,14 +19,14 @@ template <typename T>
 class Singleton
 {
 protected:
-    constexpr Singleton() noexcept = default;
+    constexpr Singleton() noexcept  = default;
     constexpr ~Singleton() noexcept = default;
 
 public:
-    constexpr Singleton(const Singleton&) = delete;
-    constexpr Singleton(Singleton&&) = delete;
+    constexpr Singleton(const Singleton&)      = delete;
+    constexpr Singleton(Singleton&&)           = delete;
     constexpr auto operator=(const Singleton&) = delete;
-    constexpr auto operator=(Singleton&&) = delete;
+    constexpr auto operator=(Singleton&&)      = delete;
 
     [[nodiscard]] static constexpr T* GetSingleton() noexcept
     {
@@ -39,14 +39,14 @@ template <typename TDerived, typename TEvent>
 class EventSingleton : public RE::BSTEventSink<TEvent>
 {
 protected:
-    constexpr EventSingleton() noexcept = default;
+    constexpr EventSingleton() noexcept           = default;
     constexpr ~EventSingleton() noexcept override = default;
 
 public:
     constexpr EventSingleton(const EventSingleton&) = delete;
-    constexpr EventSingleton(EventSingleton&&) = delete;
+    constexpr EventSingleton(EventSingleton&&)      = delete;
     constexpr auto operator=(const EventSingleton&) = delete;
-    constexpr auto operator=(EventSingleton&&) = delete;
+    constexpr auto operator=(EventSingleton&&)      = delete;
 
     [[nodiscard]] static constexpr TDerived* GetSingleton() noexcept
     {

@@ -28,6 +28,8 @@ namespace RaceMenuHandler
         std::string selectedClassCallback;
         std::string selectedTraitCallback;
 
+        bool        bUseClass;
+        bool        bUseTrait;
         std::string defaultClass = "";
         std::string defaultTrait = "";
         std::string defaultClassCallback = "";
@@ -35,7 +37,7 @@ namespace RaceMenuHandler
 
         RE::GPtr<RE::GFxMovieView>         raceSexMovie = nullptr;
 
-        i32  numNewCols         = 2;
+        i32  numNewCols         = 0;
         bool bLimitedMenu = false;
         bool categoriesInjected = false;
         bool uiElementsCreated  = false;
@@ -111,13 +113,4 @@ namespace RaceMenuHandler
         void Call(Params& a_params) override;
         void Reset();
     };
-
-    class GetTESGlobal : public RE::GFxFunctionHandler
-    {
-    public:
-        void Call(Params& a_params) override;
-    };
-
-    bool InstallGetTESGlobal(RE::GFxMovieView*, RE::GFxValue*);
-    void RegisterGetTESGlobal();
 } // namespace RaceMenuHandler

@@ -10,14 +10,16 @@ import Components.CrossPlatformButtons;
 class RaceSexPanels extends MovieClip
 {
 	static var bUseClasses:Boolean = true;
-	static var bUseTraits:Boolean = true;
+	static var bUseTraits:Boolean = true;	
 
-	static var RACE_CATEGORY:Number = 0;
-	static var CLASS_CATEGORY:Number = 1;
-	static var TRAIT_CATEGORY:Number = 2;
-	static var BODY_CATEGORY:Number = 3;
-	static var HEAD_CATEGORY:Number = 4;
-	static var UpdateInterval:Number = -1;
+	static var RACE_CATEGORY:Number;
+	static var CLASS_CATEGORY:Number;
+	static var TRAIT_CATEGORY:Number;
+	static var BODY_CATEGORY:Number;
+	static var HEAD_CATEGORY:Number;
+	static var classFlag:Number;
+	static var traitFlag:Number;
+	static var UpdateInterval:Number;
 
 	var BackButton:CrossPlatformButtons;
 	var DoneButton:CrossPlatformButtons;
@@ -32,7 +34,9 @@ class RaceSexPanels extends MovieClip
 	var PlayerName:TextField;
 	var PlayerRace:TextField;
 	var PlayerClass:TextField;
+	var PlayerClassLabel:TextField;
 	var PlayerTrait:TextField;
+	var PlayerTraitLabel:TextField;
 	var RaceDescriptionInstance:MovieClip;
 	var _CategoriesList:MovieClip;
 	var _SubList1:MovieClip;
@@ -51,6 +55,54 @@ class RaceSexPanels extends MovieClip
 	function RaceSexPanels()
 	{
 		super();
+
+		RACE_CATEGORY = 0;
+		if (bUseClasses && bUseTraits) 
+		{
+			CLASS_CATEGORY = 1;
+			TRAIT_CATEGORY = 2;
+			BODY_CATEGORY = 3;
+			HEAD_CATEGORY = 4;
+			classFlag = 1 << 29;
+			traitFlag = 1 << 30;
+
+			PlayerClass = _root.RaceSexMenuBaseInstance.BottomBarInstance.PlayerInfo_mc.PlayerClass;
+			PlayerClass.textAutoSize = "shrink";
+			PlayerTrait = _root.RaceSexMenuBaseInstance.BottomBarInstance.PlayerInfo_mc.PlayerTrait;
+			PlayerTrait.textAutoSize = "shrink";
+		}
+		else if (bUseClasses && !bUseTraits)
+		{
+			CLASS_CATEGORY = 1;
+			BODY_CATEGORY = 2;
+			HEAD_CATEGORY = 3;
+			classFlag = 1 << 29;
+
+			PlayerClass = _root.RaceSexMenuBaseInstance.BottomBarInstance.PlayerInfo_mc.PlayerClass;
+			PlayerClass.textAutoSize = "shrink";
+			PlayerTraitLabel = _root.RaceSexMenuBaseInstance.BottomBarInstance.PlayerInfo_mc.APPTRAIT;
+			PlayerTraitLabel.text = "";
+
+
+		}
+		else if (bUseTraits && !bUseClasses)
+		{
+			TRAIT_CATEGORY = 1;
+			BODY_CATEGORY = 2;
+			HEAD_CATEGORY = 3;
+			traitFlag = 1 << 29;
+
+			PlayerClassLabel = _root.RaceSexMenuBaseInstance.BottomBarInstance.PlayerInfo_mc.APPCLASS;
+			PlayerClassLabel.text = "";
+			PlayerTrait = _root.RaceSexMenuBaseInstance.BottomBarInstance.PlayerInfo_mc.PlayerTrait;
+			PlayerTrait.textAutoSize = "shrink";
+		}
+		else {
+			BODY_CATEGORY = 1;
+			HEAD_CATEGORY = 2;
+		}
+		UpdateInterval = -1;
+
 		GlobalFunc.MaintainTextFormat();
 		GlobalFunc.SetLockFunction();
 		_CategoriesList = _parent.CagetoryLockBaseInstance.CategoryInstance.List_mc;
@@ -62,16 +114,6 @@ class RaceSexPanels extends MovieClip
 		DoneButton = _root.RaceSexMenuBaseInstance.BottomBarInstance.ButtonsInstance.XButtonInstance;
 		PlayerName = _root.RaceSexMenuBaseInstance.BottomBarInstance.PlayerInfo_mc.PlayerName;
 		PlayerName.textAutoSize = "shrink";
-		if (bUseClasses)
-		{
-			PlayerClass = _root.RaceSexMenuBaseInstance.BottomBarInstance.PlayerInfo_mc.PlayerClass;
-			PlayerClass.textAutoSize = "shrink";
-		}
-		if (bUseTraits)
-		{
-			PlayerTrait = _root.RaceSexMenuBaseInstance.BottomBarInstance.PlayerInfo_mc.PlayerTrait;
-			PlayerTrait.textAutoSize = "shrink";
-		}
 		PlayerRace = _root.RaceSexMenuBaseInstance.BottomBarInstance.PlayerInfo_mc.PlayerRace;
 		_TextEntryField._alpha = 0;
 		_TextEntryField._x = -2500;
@@ -200,8 +242,6 @@ class RaceSexPanels extends MovieClip
 			classArray.sortOn("Name",Array.DESCENDING);
 			defaultClass = classArray.length - _global.LAM.GetTESGlobal("CLASS");
 
-			skse.Log(defaultClass.toString())
-			skse.Log(classArray[defaultClass].Name)
 			PlayerClass.SetText(classArray[defaultClass].Name);
 			classCallback = classArray[defaultClass].UniqueKey;
 		}
@@ -211,8 +251,6 @@ class RaceSexPanels extends MovieClip
 			traitArray.sortOn("Name",Array.DESCENDING);
 			defaultTrait = traitArray.length - _global.LAM.GetTESGlobal("TRAIT");
 
-			skse.Log(defaultTrait.toString())
-			skse.Log(traitArray[defaultTrait].Name)
 			PlayerTrait.SetText(traitArray[defaultTrait].Name);
 			traitCallback = traitArray[defaultTrait].UniqueKey;
 		}
@@ -250,21 +288,19 @@ class RaceSexPanels extends MovieClip
 		{
 			var entryObject:Object = {text:arguments[i + CAT_TEXT], flag:arguments[i + CAT_FLAG], savedItemIndex:-1};
 			_CategoriesList.entryList.push(entryObject);
+
 			if (i == 0)
 			{
 				if (bUseClasses)
 				{
-					var classFlag:Number = 512;
 					var classObject:Object = bLimitedMenu ? {text:"", flag:classFlag, savedItemIndex:0} : {text:"$APPCLASSHEADER", flag:classFlag, savedItemIndex:0};
 					_CategoriesList.entryList.push(classObject);
 				}
 				if (bUseTraits)
 				{
-					var traitFlag:Number = bUseClasses ? 1024 : 512;
 					var traitObject:Object = bLimitedMenu ? {text:"", flag:traitFlag, savedItemIndex:0} : {text:"$APPTRAITHEADER", flag:traitFlag, savedItemIndex:0};
 					_CategoriesList.entryList.push(traitObject);
 				}
-
 			}
 		}
 
