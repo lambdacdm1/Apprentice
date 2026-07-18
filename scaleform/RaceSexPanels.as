@@ -9,7 +9,7 @@ import Components.CrossPlatformButtons;
 
 class RaceSexPanels extends MovieClip
 {
-	static var bUseClasses:Boolean = false;
+	static var bUseClasses:Boolean = true;
 	static var bUseTraits:Boolean = true;	
 
 	static var RACE_CATEGORY:Number;
