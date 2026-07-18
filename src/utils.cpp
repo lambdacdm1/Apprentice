@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils.h"
+#include "settings.h"
 
 namespace Utils
 {
@@ -97,3 +98,62 @@ namespace Utils
         return (isClass || isTrait);
     }
 } // namespace Utils
+
+namespace GetTESGlobalNS
+{
+    void GetTESGlobal::Call(Params& a_params)
+    {
+        assert(a_params.argCount >= 1);
+
+        const auto settingsHandler = Settings::GetSingleton();
+
+        std::string_view input  = a_params.args[0].GetString();
+        RE::GFxValue*    retVal = a_params.retVal;
+        RE::GFxMovie*    movie  = a_params.movie;
+
+        if (input == "CLASS" && settingsHandler->MAG_ClassTracker) {
+            logger::info("ClassTracker {}", settingsHandler->MAG_ClassTracker->value);
+            retVal->SetNumber(settingsHandler->MAG_ClassTracker->value);
+        }
+
+        if (input == "TRAIT" && settingsHandler->MAG_TraitTracker) {
+            logger::info("TraitTracker {}", settingsHandler->MAG_TraitTracker->value);
+            retVal->SetNumber(settingsHandler->MAG_TraitTracker->value);
+        }
+    }
+
+    /* Install Scaleform Callback*/
+    bool Install(RE::GFxMovieView* a_view, RE::GFxValue*)
+    {
+        RE::GFxValue globals;
+        std::string  swfName = a_view->GetMovieDef()->GetFileURL();
+
+        bool result = a_view->GetVariable(&globals, "_global");
+        if (result && swfName == "Interface/RaceSex_menu.swf") {
+            RE::GFxValue LAM;
+            if (!globals.GetMember("LAM", &LAM)) {
+                a_view->CreateObject(&LAM);
+            }
+
+            RE::GFxValue fnValue;
+
+            static GetTESGlobal* getTESGlobal = new GetTESGlobal;
+
+            a_view->CreateFunction(&fnValue, getTESGlobal);
+            LAM.SetMember("GetTESGlobal", fnValue);
+
+            globals.SetMember("LAM", LAM);
+            logger::info("TESGlobal Getter installed.");
+            return true;
+        }
+        return false;
+    }
+
+    /* Register loader in Scaleform interface*/
+    void Register()
+    {
+        if (const auto scaleform{ SKSE::GetScaleformInterface() }) {
+            scaleform->Register(Install, "LAM2");
+        }
+    }
+} // namespace GetTESGlobalNS

@@ -8,6 +8,8 @@ public:
 
     static RE::FormID ParseFormID(const std::string& str);
 
+    bool           bUseClass;
+    bool           bUseTrait;
     std::string FileName;
     std::string MAG_ClassTrackerFormID;
     std::string MAG_TraitTrackerFormID;

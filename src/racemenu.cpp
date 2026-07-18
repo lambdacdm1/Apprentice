@@ -17,7 +17,6 @@ namespace RaceMenuHandler
         if (const auto ui{ RE::UI::GetSingleton() }) {
             if (const auto menu{ ui->GetMenu(RE::RaceSexMenu::MENU_NAME) }) {
                 if (auto a_movie{ menu->uiMovie }) {
-
                     racePanel             = RE::GFxValue{};
                     raceSexPanelsInstance = RE::GFxValue{};
                     raceListEntryList     = RE::GFxValue{};
@@ -35,6 +34,10 @@ namespace RaceMenuHandler
                     a_movie->GetVariable(&categoryListEntryList, "_root.RaceSexMenuBaseInstance.RaceSexPanelsInstance.racePanel.slidingCategoryList.categoryList.entryList");
 
                     bLimitedMenu = Utils::GetBooleanMember(raceSexPanelsInstance, "bLimitedMenu");
+
+                    const auto settingsHandler = Settings::GetSingleton();
+                    bUseClass                  = settingsHandler->bUseClass;
+                    bUseTrait                  = settingsHandler->bUseTrait;
 
                     if (!bLimitedMenu) {
                         SetDefaultSelections();
@@ -59,52 +62,50 @@ namespace RaceMenuHandler
 
         auto      classEntryJSON = getJSONData.LoadJSON("Data/SKSE/Plugins/app_classes.json");
         auto      traitEntryJSON = getJSONData.LoadJSON("Data/SKSE/Plugins/app_traits.json");
-        const u32 newSize        = size + classEntryJSON.size() + traitEntryJSON.size();
+        u32 newSize        = size;
+        if (bUseClass)
+            newSize += classEntryJSON.size();
+        if (bUseTrait)
+            newSize += traitEntryJSON.size();
 
         // Expand RaceList by numClassSize + numTraitSize
         raceListEntryList.SetArraySize(newSize);
 
         // Add Class entries
-        for (auto i = 0; i < classEntryJSON.size(); i++) {
-            RE::GFxValue classEntry;
+        if (bUseClass) {
+            for (auto i = 0; i < classEntryJSON.size(); i++) {
+                RE::GFxValue classEntry;
 
-            json el = classEntryJSON[i];
+                json el = classEntryJSON[i];
 
-            if (i == 0) {
-                //defaultClass = el["Name"];
-                //defaultClassCallback = el["UniqueKey"];
+                a_movie->CreateObject(&classEntry);
+
+                // Populate the classEntry
+                BuildListEntry(&classEntry, ENTRY_TYPE_RACE, el["Name"], classFlag, el["Description"], 0, i, el["UniqueKey"], true, false);
+
+                // Set the classEntry in the entryList
+                raceListEntryList.SetElement(size + i, classEntry);
+
+                RE::GFxValue _onItemPress;
+                raceSexPanelsInstance.GetMember("onItemPress", &_onItemPress);
             }
-
-            a_movie->CreateObject(&classEntry);
-
-            // Populate the classEntry
-            BuildListEntry(&classEntry, ENTRY_TYPE_RACE, el["Name"], classFlag, el["Description"], 0, i, el["UniqueKey"], true, false);
-
-            // Set the classEntry in the entryList
-            raceListEntryList.SetElement(size + i, classEntry);
-
-            RE::GFxValue _onItemPress;
-            raceSexPanelsInstance.GetMember("onItemPress", &_onItemPress);
         }
 
         // Add Trait entries
-        for (auto i = 0; i < traitEntryJSON.size(); i++) {
-            RE::GFxValue traitEntry;
+        if (bUseTrait) {
+            for (auto i = 0; i < traitEntryJSON.size(); i++) {
+                RE::GFxValue traitEntry;
 
-            json el = traitEntryJSON[i];
+                json el = traitEntryJSON[i];
 
-            if (i == 0) {
-                //defaultTrait = el["Name"];
-                //defaultTraitCallback = el["UniqueKey"];
+                a_movie->CreateObject(&traitEntry);
+
+                // Populate the traitEntry
+                BuildListEntry(&traitEntry, ENTRY_TYPE_RACE, el["Name"], traitFlag, el["Description"], 0, 0, el["UniqueKey"], false, true);
+
+                // Set the traitEntry in the entryList
+                raceListEntryList.SetElement(size + classEntryJSON.size() + i, traitEntry);
             }
-
-            a_movie->CreateObject(&traitEntry);
-
-            // Populate the traitEntry
-            BuildListEntry(&traitEntry, ENTRY_TYPE_RACE, el["Name"], traitFlag, el["Description"], 0, 0, el["UniqueKey"], false, true);
-
-            // Set the traitEntry in the entryList
-            raceListEntryList.SetElement(size + classEntryJSON.size() + i, traitEntry);
         }
 
         logger::info("Class and Trait entryList Injected");
@@ -116,7 +117,7 @@ namespace RaceMenuHandler
     bool RaceMenu::PopulateCategoryList(RE::GPtr<RE::GFxMovieView> a_movie)
     {
         const u32 size    = categoryListEntryList.GetArraySize();
-        const u32 newSize = size + numNewCols;
+        const u32 newSize = size + bUseClass + bUseTrait;
 
         categoryListEntryList.SetArraySize(newSize);
 
@@ -126,11 +127,20 @@ namespace RaceMenuHandler
         a_movie->CreateObject(&classEntry);
         a_movie->CreateObject(&traitEntry);
 
-        BuildCategoryEntry(&classEntry, 0, 1, "$APPCLASS", classFlag, -970);
-        BuildCategoryEntry(&traitEntry, 0, 1, "$APPTRAIT", traitFlag, -965);
-
-        categoryListEntryList.SetElement(newSize - 2, classEntry);
-        categoryListEntryList.SetElement(newSize - 1, traitEntry);
+        if (bUseClass && bUseTrait) {
+            BuildCategoryEntry(&classEntry, 0, 1, "$APPCLASS", classFlag, -970);
+            BuildCategoryEntry(&traitEntry, 0, 1, "$APPTRAIT", traitFlag, -965);
+            categoryListEntryList.SetElement(newSize - 1, classEntry);
+            categoryListEntryList.SetElement(newSize - 2, traitEntry);
+        }
+        if (bUseClass && !bUseTrait) {
+            BuildCategoryEntry(&classEntry, 0, 1, "$APPCLASS", classFlag, -970);
+            categoryListEntryList.SetElement(newSize - 1, classEntry);
+        }
+        if (!bUseClass && bUseTrait) {
+            BuildCategoryEntry(&traitEntry, 0, 1, "$APPTRAIT", traitFlag, -965);
+            categoryListEntryList.SetElement(newSize - 1, traitEntry);
+        }
 
         logger::info("CategoryList Injected");
         categoriesInjected = true;
@@ -276,31 +286,34 @@ namespace RaceMenuHandler
         RE::GFxValue traitValue;
         RE::GFxValue classLabel;
         RE::GFxValue classValue;
+        
+        RE::GFxValue argsCreate[6];
+        RE::GFxValue fmtArgs[1];
 
         // Create Trait Label
-        playerNameLabel.GetMember("_x", &xPos);
-        playerNameLabel.GetMember("_y", &yPos);
-        playerNameLabel.GetMember("_width", &width);
-        playerNameLabel.GetMember("_height", &height);
-        playerNameLabel.Invoke("getTextFormat", &textFormat, nullptr, 0);
-        playerInfoMc.Invoke("getNextHighestDepth", &depth, nullptr, 0);
+        if (bUseTrait) {
+            playerNameLabel.GetMember("_x", &xPos);
+            playerNameLabel.GetMember("_y", &yPos);
+            playerNameLabel.GetMember("_width", &width);
+            playerNameLabel.GetMember("_height", &height);
+            playerNameLabel.Invoke("getTextFormat", &textFormat, nullptr, 0);
+            playerInfoMc.Invoke("getNextHighestDepth", &depth, nullptr, 0);
 
-        RE::GFxValue argsCreate[6];
-        argsCreate[0].SetString("TraitLabel");
-        argsCreate[1].SetNumber(depth.GetNumber() + 10);
-        argsCreate[2].SetNumber(xPos.GetNumber() - 150);
-        argsCreate[3].SetNumber(yPos.GetNumber());
-        argsCreate[4].SetNumber(width.GetNumber());
-        argsCreate[5].SetNumber(height.GetNumber());
-        playerInfoMc.Invoke("createTextField", nullptr, argsCreate, 6);
+            argsCreate[0].SetString("TraitLabel");
+            argsCreate[1].SetNumber(depth.GetNumber() + 10);
+            argsCreate[2].SetNumber(xPos.GetNumber() - 150);
+            argsCreate[3].SetNumber(yPos.GetNumber());
+            argsCreate[4].SetNumber(width.GetNumber());
+            argsCreate[5].SetNumber(height.GetNumber());
+            playerInfoMc.Invoke("createTextField", nullptr, argsCreate, 6);
 
-        playerInfoMc.GetMember("TraitLabel", &traitLabel);
-        Utils::AddStringMember(&traitLabel, "$APPTRAIT", "text");
+            playerInfoMc.GetMember("TraitLabel", &traitLabel);
+            Utils::AddStringMember(&traitLabel, "$APPTRAIT", "text");
 
-        RE::GFxValue fmtArgs[1];
-        fmtArgs[0] = textFormat;
-        traitLabel.Invoke("setTextFormat", nullptr, fmtArgs, 1);
-        traitLabel.Invoke("setNewTextFormat", nullptr, fmtArgs, 1);
+            fmtArgs[0] = textFormat;
+            traitLabel.Invoke("setTextFormat", nullptr, fmtArgs, 1);
+            traitLabel.Invoke("setNewTextFormat", nullptr, fmtArgs, 1);
+        }
 
         // Create Trait Value
         playerNameValue.GetMember("_x", &xPos);
@@ -326,27 +339,29 @@ namespace RaceMenuHandler
         traitValue.Invoke("setNewTextFormat", nullptr, fmtArgs, 1);
 
         // Create Class Label
-        playerNameLabel.GetMember("_x", &xPos);
-        playerNameLabel.GetMember("_y", &yPos);
-        playerNameLabel.GetMember("_width", &width);
-        playerNameLabel.GetMember("_height", &height);
-        playerNameLabel.Invoke("getTextFormat", &textFormat, nullptr, 0);
-        playerInfoMc.Invoke("getNextHighestDepth", &depth, nullptr, 0);
+        if (bUseClass) {
+            playerNameLabel.GetMember("_x", &xPos);
+            playerNameLabel.GetMember("_y", &yPos);
+            playerNameLabel.GetMember("_width", &width);
+            playerNameLabel.GetMember("_height", &height);
+            playerNameLabel.Invoke("getTextFormat", &textFormat, nullptr, 0);
+            playerInfoMc.Invoke("getNextHighestDepth", &depth, nullptr, 0);
 
-        argsCreate[0].SetString("ClassLabel");
-        argsCreate[1].SetNumber(depth.GetNumber() + 11);
-        argsCreate[2].SetNumber(xPos.GetNumber() - 300);
-        argsCreate[3].SetNumber(yPos.GetNumber());
-        argsCreate[4].SetNumber(width.GetNumber());
-        argsCreate[5].SetNumber(height.GetNumber());
-        playerInfoMc.Invoke("createTextField", nullptr, argsCreate, 6);
+            argsCreate[0].SetString("ClassLabel");
+            argsCreate[1].SetNumber(depth.GetNumber() + 11);
+            argsCreate[2].SetNumber(xPos.GetNumber() - 300);
+            argsCreate[3].SetNumber(yPos.GetNumber());
+            argsCreate[4].SetNumber(width.GetNumber());
+            argsCreate[5].SetNumber(height.GetNumber());
+            playerInfoMc.Invoke("createTextField", nullptr, argsCreate, 6);
 
-        playerInfoMc.GetMember("ClassLabel", &classLabel);
-        Utils::AddStringMember(&classLabel, "$APPCLASS", "text");
+            playerInfoMc.GetMember("ClassLabel", &classLabel);
+            Utils::AddStringMember(&classLabel, "$APPCLASS", "text");
 
-        fmtArgs[0] = textFormat;
-        classLabel.Invoke("setTextFormat", nullptr, fmtArgs, 1);
-        classLabel.Invoke("setNewTextFormat", nullptr, fmtArgs, 1);
+            fmtArgs[0] = textFormat;
+            classLabel.Invoke("setTextFormat", nullptr, fmtArgs, 1);
+            classLabel.Invoke("setNewTextFormat", nullptr, fmtArgs, 1);
+        }
 
         // Create Class Value
         playerNameValue.GetMember("_x", &xPos);
@@ -659,63 +674,6 @@ namespace RaceMenuHandler
                 argsShow[0].SetBoolean(true);
                 raceSexPanelsInstance.Invoke("ShowRaceDescription", &result, argsShow, 1);
             }
-        }
-    }
-
-    void GetTESGlobal::Call(Params& a_params)
-    {
-        assert(a_params.argCount >= 1);
-
-        const auto     settingsHandler = Settings::GetSingleton();
-
-        std::string_view input  = a_params.args[0].GetString();
-        RE::GFxValue* retVal = a_params.retVal;
-        RE::GFxMovie* movie  = a_params.movie;
-
-
-        if (input == "CLASS" && settingsHandler->MAG_ClassTracker) {
-            logger::info("ClassTracker {}", settingsHandler->MAG_ClassTracker->value);
-            retVal->SetNumber(settingsHandler->MAG_ClassTracker->value);
-        }
-
-        if (input == "TRAIT" && settingsHandler->MAG_TraitTracker) {
-            logger::info("TraitTracker {}", settingsHandler->MAG_TraitTracker->value);
-            retVal->SetNumber(settingsHandler->MAG_TraitTracker->value);
-        }
-    }
-
-    /* Install Scaleform Callback*/
-    bool InstallGetTESGlobal(RE::GFxMovieView* a_view, RE::GFxValue*)
-    {
-        RE::GFxValue globals;
-        std::string  swfName = a_view->GetMovieDef()->GetFileURL();
-
-        bool result = a_view->GetVariable(&globals, "_global");
-        if (result && swfName == "Interface/RaceSex_menu.swf") {
-            RE::GFxValue LAM;
-            if (!globals.GetMember("LAM", &LAM)) {
-                a_view->CreateObject(&LAM);
-            }
-
-            RE::GFxValue fnValue;
-
-            static GetTESGlobal* getTESGlobal = new GetTESGlobal;
-
-            a_view->CreateFunction(&fnValue, getTESGlobal);
-            LAM.SetMember("GetTESGlobal", fnValue);
-
-            globals.SetMember("LAM", LAM);
-            logger::info("TESGlobal Getter installed.");
-            return true;
-        }
-        return false;
-    }
-
-    /* Register loader in Scaleform interface*/
-    void RegisterGetTESGlobal()
-    {
-        if (const auto scaleform{ SKSE::GetScaleformInterface() }) {
-            scaleform->Register(InstallGetTESGlobal, "LAM2");
         }
     }
 } // namespace RaceMenuHandler

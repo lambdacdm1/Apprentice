@@ -1,5 +1,4 @@
 #include "events.h"
-#include "interface.h"
 #include "racemenu.h"
 #include "settings.h"
 
@@ -11,6 +10,7 @@ namespace Events
         const auto                ui = RE::UI::GetSingleton();
         static RaceSexMenuWatcher watcher;
         ui->AddEventSink(&watcher);
+        logger::info("RaceSexMenuWatcher installed.");
         return true;
     }
 
@@ -32,7 +32,6 @@ namespace Events
         if (a_event->opening) {
             if (auto menu{ ui->GetMenu(a_event->menuName) }) {
                 if (auto a_movie{ menu->uiMovie.get() }) {
-                    a_movie->Invoke("_root.RaceSexMenuBaseInstance.RaceSexPanelsInstance.InitData", nullptr, nullptr, 0);
 
                     const auto settingsHandler = Settings::GetSingleton();
                     settingsHandler->LoadForms();
@@ -44,6 +43,9 @@ namespace Events
                     else {
                         logger::info("Failed to install RaceMenu integration. Falling back to vanilla.");
                     }
+
+                    a_movie->Invoke("_root.RaceSexMenuBaseInstance.RaceSexPanelsInstance.InitData", nullptr, nullptr, 0);
+
                 }
             }
         }

@@ -1,19 +1,18 @@
 #include "events.h"
-#include "interface.h"
 #include "jsonhandler.h"
 #include "racemenu.h"
 #include "settings.h"
+#include "utils.h"
 
 void Listener(SKSE::MessagingInterface::Message* message) noexcept
 {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         if (auto settingsHandler{ Settings::GetSingleton() }) {
             settingsHandler->LoadSettings();
+            JSONHandler::Register();
+            GetTESGlobalNS::Register();
+            Events::RaceSexMenuWatcher::Register();
         }
-
-        Events::RaceSexMenuWatcher::Register();
-        JSONHandler::Register();
-        RaceMenuHandler::RegisterGetTESGlobal();
     }
 
 }
